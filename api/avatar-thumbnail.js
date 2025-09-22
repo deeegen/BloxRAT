@@ -1,14 +1,24 @@
 export default async function handler(req, res) {
-  const { mode, responseType = "json" } = req.query;
+  // Destructure query params
+  let { mode, responseType = "json", placeId, userId, type = "avatar", isCircular = false, size = 420, format = "Png" } = req.query;
+
+  // Ensure parameters are strings if arrays
+  if (Array.isArray(mode)) mode = mode[0];
+  if (Array.isArray(responseType)) responseType = responseType[0];
+  if (Array.isArray(placeId)) placeId = placeId[0];
+  if (Array.isArray(userId)) userId = userId[0];
+  if (Array.isArray(type)) type = type[0];
+  if (Array.isArray(isCircular)) isCircular = isCircular[0] === "true";
+  if (Array.isArray(size)) size = parseInt(size[0], 10);
+  if (Array.isArray(format)) format = format[0];
 
   if (!mode) {
     return res.status(400).json({ error: "Mode not specified! Use 'game' or 'user'" });
   }
 
   try {
+    // ---------- GAME MODE ----------
     if (mode === "game") {
-      const { placeId } = req.query;
-
       if (!placeId) {
         return res.status(400).json({ error: "Place ID not specified!" });
       }
@@ -38,15 +48,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid response type. Only 'json' is supported for games." });
     }
 
+    // ---------- USER MODE ----------
     if (mode === "user") {
-      const {
-        userId,
-        type = "avatar",
-        isCircular = false,
-        size = 420,
-        format = "Png",
-      } = req.query;
-
       if (!userId) {
         return res.status(400).json({ error: "User ID not specified!" });
       }
@@ -62,6 +65,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: "Thumbnail data not found" });
       }
 
+      // IMAGE RESPONSE
       if (responseType === "image") {
         const imageResponse = await fetch(thumbData.imageUrl);
         const contentType = imageResponse.headers.get("content-type");
@@ -73,6 +77,7 @@ export default async function handler(req, res) {
         return res.status(200).send(Buffer.from(buffer));
       }
 
+      // JSON RESPONSE
       if (responseType === "json") {
         if (!userRes.ok) {
           return res.status(404).json({ error: "User info not found" });
